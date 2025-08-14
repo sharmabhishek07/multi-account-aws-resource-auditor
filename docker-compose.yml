@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+  auditor:
+    build: .
+    container_name: aws-resource-auditor
+    environment:
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_SESSION_TOKEN
+      - AWS_REGION=ap-south-1
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./out:/app/out
+      - ~/.aws:/root/.aws:ro  # Mount local AWS CLI credentials/config
+    command: ["python", "-m", "auditor", "--config", "config.yaml", "--only", "ec2,s3,lambda,rds,iam"]

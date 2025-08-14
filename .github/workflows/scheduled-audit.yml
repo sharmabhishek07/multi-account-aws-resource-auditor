@@ -1,0 +1,48 @@
+name: Scheduled Audit (OIDC)
+
+on:
+  schedule:
+    - cron: "0 2 * * 1"   # Every Monday 02:00 UTC
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'ap-south-1' }}
+      ROLE_TO_ASSUME: ${{ vars.AWS_ROLE_TO_ASSUME }}
+      S3_BUCKET: ${{ vars.S3_BUCKET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run audit
+        run: |
+          cp sample_config.yaml config.yaml
+          # Customize your config here if needed (e.g., echo accounts: ... >> config.yaml)
+          python -m auditor --config config.yaml --only ec2,s3,lambda,rds,iam --out out
+
+      - name: Upload findings to S3
+        uses: aws-actions/aws-cli-action@v2
+        with:
+          awscliv2-enable-output-logging: false
+          args: |
+            s3 cp out/findings.html s3://${{ env.S3_BUCKET }}/findings/latest/findings.html --cache-control no-cache

@@ -1,0 +1,11 @@
+__pycache__
+*.pyc
+.out
+out
+dist
+.venv
+.git
+.gitignore
+tests
+.github
+terraform

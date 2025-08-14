@@ -1,0 +1,10 @@
+assume_role_name: OrganizationAccountAccessRole
+external_id: ""
+regions: ["ap-south-1", "us-east-1", "us-west-2"]
+exclude_accounts: []
+stale_days:
+  lambda_no_invocations: 30
+  ec2_stopped_older_than: 7
+  iam_key_unused_days: 60
+  iam_key_max_age_days: 90
+output_dir: "./out"
