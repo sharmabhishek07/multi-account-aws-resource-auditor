@@ -1,0 +1,21 @@
+# AWS Multi-Account Resource Auditor configuration
+
+regions:
+  - us-east-1
+  - us-west-2
+  - ap-south-1
+
+output_dir: reports
+
+accounts:
+  - id: "111111111111"
+    role_arn: "arn:aws:iam::111111111111:role/AuditRole@Prod"
+  - id: "222222222222"
+    role_arn: "arn:aws:iam::222222222222:role/AuditRole@Dev"
+
+scan:
+  ec2: true
+  s3: true
+  lambda: true
+  rds: true
+  iam: true

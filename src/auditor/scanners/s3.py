@@ -1,85 +1,110 @@
-from __future__ import annotations
+﻿import boto3
 
-def scan_s3(session, account_id: str, region: str, conf) -> list[dict]:
-    findings = []
-    s3 = session.client("s3", region_name=region)
-    # S3 buckets are global; we run once per region but results are same. Filter to avoid dupes.
+def scan_s3_buckets(account_id, region, findings):
+    """
+    Scan S3 buckets for various security issues, including lifecycle policy.
+    """
+    s3 = boto3.client('s3', region_name=region)
+
     buckets = s3.list_buckets().get("Buckets", [])
-    for b in buckets:
-        name = b["Name"]
-        # Public check
+    for bucket in buckets:
+        name = bucket["Name"]
         public = False
+        bpa_off = False
+        encryption_missing = False
+        versioning_missing = False
+        lifecycle_missing = False
+
         try:
-            acl = s3.get_bucket_acl(Bucket=name)
-            for g in acl.get("Grants", []):
-                grantee = g.get("Grantee", {})
-                if grantee.get("URI", "").endswith("AllUsers") or grantee.get("URI", "").endswith("AuthenticatedUsers"):
-                    public = True
+            s3.get_bucket_acl(Bucket=name)
         except Exception:
             pass
 
-        # Block Public Access check
-        bpa_off = False
         try:
-            bpa = s3.get_public_access_block(Bucket=name)
-            cfg = bpa.get("PublicAccessBlockConfiguration", {})
-            bpa_off = not all(cfg.values())
+            s3.get_bucket_policy_status(Bucket=name)
         except Exception:
-            # no BPA -> effectively not enforced
-            bpa_off = True
+            pass
 
-        # Encryption
-        encryption_missing = False
         try:
             s3.get_bucket_encryption(Bucket=name)
-        except Exception:
+        except s3.exceptions.ClientError:
             encryption_missing = True
 
-        # Versioning
-        versioning_missing = False
         try:
             ver = s3.get_bucket_versioning(Bucket=name)
-            versioning_missing = ver.get("Status") != "Enabled"
+            if ver.get("Status") != "Enabled":
+                versioning_missing = True
         except Exception:
-            versioning_missing = True
+            pass
+
+        try:
+            lc = s3.get_bucket_lifecycle_configuration(Bucket=name)
+            if not lc.get("Rules"):
+                lifecycle_missing = True
+        except s3.exceptions.ClientError:
+            lifecycle_missing = True
 
         if public or bpa_off or encryption_missing or versioning_missing:
             issues = []
-            if public: issues.append("public ACL/policy")
-            if bpa_off: issues.append("Public Access Block not fully enabled")
-            if encryption_missing: issues.append("encryption missing")
-            if versioning_missing: issues.append("versioning not enabled")
+            if public:
+                issues.append("public ACL/policy")
+            if bpa_off:
+                issues.append("Public Access Block not fully enabled")
+            if encryption_missing:
+                issues.append("encryption missing")
+            if versioning_missing:
+                issues.append("versioning not enabled")
+
             findings.append({
                 "account_id": account_id,
                 "region": region,
                 "service": "S3",
                 "resource_id": name,
-                "severity": "HIGH" if public else "MEDIUM",
-                "title": "S3 bucket misconfiguration",
-                "details": ", ".join(issues),
-                "remediation": "Enable Block Public Access, default encryption, and versioning; review bucket policy/ACL.",
-                "tags": {},
+                "severity": "MEDIUM",
+                "title": "S3 bucket misconfigurations",
+                "details": issues
             })
+
+        if lifecycle_missing:
+            findings.append({
+                "account_id": account_id,
+                "region": region,
+                "service": "S3",
+                "resource_id": name,
+                "severity": "LOW",
+                "title": "S3 bucket missing lifecycle policy",
+                "details": {}
+            })
+
+def scan_s3(session, account_id, region, conf):
+    findings = []
+    s3 = session.client("s3", region_name=region)
+
+    try:
+        buckets = s3.list_buckets()["Buckets"]
+        for bucket in buckets:
+            name = bucket["Name"]
+
+            # Example: check public access
+            public = False
+            try:
+                pab = s3.get_bucket_policy_status(Bucket=name)
+                if pab["PolicyStatus"]["IsPublic"]:
+                    public = True
+            except Exception:
+                pass
+
+            if public:
+                findings.append({
+                    "account_id": account_id,
+                    "region": region,
+                    "service": "S3",
+                    "resource_id": name,
+                    "severity": "HIGH",
+                    "title": "S3 bucket is public",
+                })
+
+    except Exception as e:
+        print(f"[WARN] {account_id} {region} s3: {e}")
+
     return findings
-
-# Lifecycle configuration
-lifecycle_missing = False
-try:
-    lc = s3.get_bucket_lifecycle_configuration(Bucket=name)
-    if not lc.get("Rules"):
-        lifecycle_missing = True
-except Exception:
-    lifecycle_missing = True
-
-if lifecycle_missing:
-    findings.append({
-        "account_id": account_id,
-        "region": region,
-        "service": "S3",
-        "resource_id": name,
-        "severity": "LOW",
-        "title": "S3 bucket missing lifecycle policy",
-        "details": "No lifecycle rules found (may lead to unnecessary storage costs)",
-        "remediation": "Add lifecycle rules to transition or expire old objects.",
-        "tags": {},
-    })

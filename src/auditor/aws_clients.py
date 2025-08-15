@@ -1,6 +1,6 @@
 from __future__ import annotations
 import boto3
-from typing import Iterable, Dict, Any, Tuple, List
+from typing import List
 
 def org_client():
     return boto3.client("organizations")

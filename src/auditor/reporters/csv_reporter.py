@@ -1,5 +1,6 @@
 from __future__ import annotations
-import csv, os
+import csv
+import os
 
 def write_csv(findings: list[dict], outdir: str):
     os.makedirs(outdir, exist_ok=True)

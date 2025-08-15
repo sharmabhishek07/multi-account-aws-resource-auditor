@@ -1,0 +1,38 @@
+# config.yaml
+# AWS Auditor Configuration
+
+# Directory where reports will be saved (can be overridden by --out)
+output_dir: reports
+
+# AWS account IDs and roles to assume
+# You can add multiple accounts here
+accounts:
+  - id: "123456789012"   # Replace with your AWS Account ID
+    role: "arn:aws:iam::123456789012:role/AuditRole"  # Replace with your auditor role ARN
+
+# Optional: restrict to specific AWS regions (leave empty for all available regions)
+regions:
+  - us-east-1
+  - us-west-2
+
+# IAM role session name
+#session_name: "aws-auditor"
+session_name: "github-oidc-audit"
+# Services to scan
+services:
+  - ec2
+  - s3
+  - lambda
+  - rds
+  - iam
+
+# Report settings
+report:
+  include_severity: true
+  formats:
+    - csv
+    - html
+
+# Logging settings
+logging:
+  level: INFO

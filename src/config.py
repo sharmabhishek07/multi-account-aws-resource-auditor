@@ -3,13 +3,10 @@ import yaml
 from dataclasses import dataclass, field
 from typing import List
 
-
 @dataclass
 class Account:
     id: str
-    role_arn: str | None = None
     name: str | None = None
-
 
 @dataclass
 class StaleDays:

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
 def scan_iam(session, account_id: str, region: str, conf) -> list[dict]:
     # IAM is global; region parameter is unused but kept for uniformity
