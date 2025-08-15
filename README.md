@@ -151,3 +151,6 @@ The workflow `.github/workflows/scheduled-audit.yml` demonstrates:
 
 When it runs, the HTML report will be available at:
 `s3://$S3_BUCKET/findings/latest/findings.html`
+
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/cf6bfba4-90f1-4a7e-9975-24b530da4be2" />
+
