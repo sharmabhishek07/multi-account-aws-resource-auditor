@@ -44,4 +44,4 @@ jobs:
         uses: aws-actions/aws-cli@v1
         with:
           aws-region: ${{ env.AWS_REGION }}
-    command: s3 cp out/findings.html s3://${{ env.S3_BUCKET }}/findings/latest/findings.html --cache-control no-cache
+          args: s3 cp out/findings.html s3://${{ env.S3_BUCKET }}/findings/latest/findings.html --cache-control no-cache
