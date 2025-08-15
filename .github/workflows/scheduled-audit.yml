@@ -41,7 +41,6 @@ jobs:
           python -m auditor --config config.yaml --only ec2,s3,lambda,rds,iam --out out
 
       - name: Upload findings to S3
-        uses: aws-actions/aws-cli@v1
-        with:
-          aws-region: ${{ env.AWS_REGION }}
-          args: s3 cp out/findings.html s3://${{ env.S3_BUCKET }}/findings/latest/findings.html --cache-control no-cache
+        run: aws s3 cp out/findings.html s3://${{ env.S3_BUCKET }}/findings/latest/findings.html --cache-control no-cache
+        env:
+           AWS_REGION: ${{ env.AWS_REGION }}
