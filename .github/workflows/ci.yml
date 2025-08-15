@@ -25,5 +25,8 @@ jobs:
         run: bandit -r src || true
       - name: Python package audit
         run: pip-audit -r requirements.txt || true
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)/src" >> $GITHUB_ENV
       - name: Run tests
         run: pytest -q
+
